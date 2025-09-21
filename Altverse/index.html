@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DRISHYAMM</title>
+<link rel="shortcut icon" href="title.jpg" type="image/x-icon">
+<style>
+  :root{
+    --bg:#070a1a; --panel:#0b102b; --panel2:#0e1438; --text:#eaf0ff; --muted:#a9b7ff;
+    --light:#EEEED2; --dark:#769656;
+    --sel:#8b73ff; --hint:#00d084; --danger:#ff5a63; --last:#ffe97899;
+    --whitePiece:#fbfcff; --blackPiece:#101524;
+    --btn:#1a2353; --btn-border:#3a47a1; --btn-hover:#24318a;
+    --vip:#ffd54f;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(1200px 700px at 20% -10%,#15206755,transparent),var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+  header{padding:14px 16px;border-bottom:1px solid #ffffff1a;background:linear-gradient(180deg,#0f1628cc,#070a1acc);backdrop-filter:blur(6px);position:sticky;top:0;z-index:5}
+  .wrap{max-width:1100px;margin:0 auto;display:flex;gap:18px;align-items:center;justify-content:space-between}
+  h1{font-size:clamp(16px,2.6vw,22px);margin:0;font-weight:900;letter-spacing:.5px}
+  .muted{color:var(--muted);font-size:13px}
+
+
+  main{max-width:1100px;margin:16px auto;display:grid;grid-template-columns:1fr 360px;gap:18px;padding:0 14px}
+  @media (max-width:980px){ main{grid-template-columns:1fr} }
+
+
+  .board-wrap{display:grid;place-items:center;padding:clamp(8px,2.4vw,14px);background:linear-gradient(180deg,#0b102b,#0e1438);border:1px solid #ffffff14;border-radius:16px;box-shadow:0 10px 30px #0006;}
+  .board-wrap>*{width:100%}
+  .board{position:relative;display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);aspect-ratio:1/1;width:min(96vw,700px);max-width:700px;border:2px solid #0004;border-radius:12px;overflow:hidden;margin:auto}
+  @media (max-width:760px){ .board{width:min(96vw,560px)} }
+
+
+  .sq{position:relative;display:grid;place-items:center;user-select:none;cursor:pointer;aspect-ratio:1/1;min-width:0;min-height:0}
+  .light{background:var(--light)} .dark{background:var(--dark)}
+  .sq.sel::after{content:"";position:absolute;inset:3px;border:3px solid var(--sel);border-radius:8px;box-shadow:0 0 12px #8b73ff77}
+  .sq.last{outline:4px solid var(--last); outline-offset:-4px}
+  .dot{position:absolute;width:18px;height:18px;border-radius:50%;background:var(--hint);opacity:.9}
+  .cap{position:absolute;inset:0;box-shadow:inset 0 0 0 4px var(--danger)}
+
+
+  .piece{width:94%;height:94%;display:grid;place-items:center}
+  .svg{width:100%;height:100%;filter:drop-shadow(0 3px 6px #0006);will-change:transform}
+  .w svg{fill:var(--whitePiece)}
+  .b svg{fill:var(--blackPiece)}
+  .vipHalo{position:absolute;inset:6%;border-radius:10px;box-shadow:0 0 0 3px var(--vip),0 0 18px 6px #ffd54f66, inset 0 0 0 2px #0003;pointer-events:none;animation:pulse 1.2s ease-in-out infinite alternate;z-index:2}
+  @keyframes pulse{from{opacity:.55}to{opacity:1}}
+
+
+  .coord{position:absolute;color:#000b;font-size:clamp(10px,1.4vw,13px);font-weight:800;user-select:none}
+  .file{bottom:6px;right:8px} .rank{top:6px;left:8px}
+  .dark .coord{color:#0b0b0b} .light .coord{color:#202020}
+
+
+  .panel{background:linear-gradient(180deg,#0b102b,#0e1438);border:1px solid #ffffff14;border-radius:16px;padding:14px;box-shadow:0 10px 30px #0006}
+  .panel h3{margin:0 0 12px 0;font-size:16px}
+  .controls{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:8px}
+  button{cursor:pointer;border:1px solid var(--btn-border);background:linear-gradient(180deg,var(--btn),#151c47);color:var(--text);padding:12px 16px;border-radius:12px;box-shadow:0 4px 10px #0005;min-height:44px;min-width:44px;touch-action:manipulation}
+  button:hover{border-color:#7a86ff;background:linear-gradient(180deg,var(--btn-hover),#1a2760)}
+  .status{font-weight:700;margin-top:6px}
+
+
+  /* Intro */
+  .intro{position:fixed;inset:0;background:radial-gradient(1000px 600px at 50% -10%,#0c1130,transparent),#050814;display:grid;place-items:center;z-index:9999;overflow:hidden}
+  .introBox{display:grid;gap:22px;place-items:center;text-align:center;position:relative}
+  .bars{position:absolute;inset:0;pointer-events:none}
+  .bar{position:absolute;left:0;right:0;height:16%;background:#000;filter:drop-shadow(0 6px 18px #0008)}
+  .bar.top{top:-16%;animation:barIn 800ms ease forwards}
+  .bar.bottom{bottom:-16%;animation:barIn 800ms 60ms ease forwards}
+  @keyframes barIn{to{transform:translateY(100%)} }
+  .grain{position:absolute;inset:-10%;background:repeating-linear-gradient(0deg,transparent 0 2px,#0001 2px 4px),radial-gradient(1200px 600px at 50% 10%,transparent,rgba(0,0,0,.35));mix-blend-mode:overlay;opacity:.6;pointer-events:none}
+  .logo{font-size:clamp(40px,10vw,96px);font-weight:1000;letter-spacing:.24em;color:transparent;-webkit-text-stroke:2px #9fb0ff;position:relative;background:linear-gradient(90deg,#c8d2ff 0%,#6aa7ff 35%,#b48bff 60%,#f8faff 100%);-webkit-background-clip:text;background-clip:text;filter:drop-shadow(0 0 14px #7c4dff77) drop-shadow(0 0 40px #4da9ff33);animation:logoIn 900ms ease both}
+  @keyframes logoIn{0%{transform:translateY(14px) scale(.92);opacity:0}60%{transform:translateY(-4px) scale(1.04);opacity:1}100%{transform:translateY(0) scale(1)}}
+  .flare{position:absolute;inset:0;pointer-events:none}
+  .flare::before{content:"";position:absolute;left:-30%;top:0;bottom:0;width:40%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);filter:blur(6px);transform:skewX(-20deg);animation:sweep 1.4s .5s ease-out forwards}
+  @keyframes sweep{to{left:110%}}
+  .logoSub{font-size:14px;color:#cfd6ffaa;letter-spacing:.2em;text-transform:uppercase;opacity:.85;animation:fadeIn .9s .6s ease both}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+  .introForm{opacity:0;transform:translateY(10px);animation:formIn .9s 1.2s ease forwards;display:grid;gap:12px;background:#0f1628cc;border:1px solid #ffffff1a;padding:18px;border-radius:14px;min-width:min(92vw,360px);backdrop-filter:blur(4px)}
+  @keyframes formIn{to{opacity:1;transform:translateY(0)}}
+  .rowf{display:grid;gap:6px}
+  label{font-size:12px;color:#b8c0ff}
+  input,select{padding:12px 14px;border-radius:12px;border:1px solid #ffffff26;background:#0b132b;color:#fff;font-size:16px}
+  .startBtn{margin-top:6px;padding:12px 14px;border-radius:12px;border:1px solid #5b6cff;background:#2a36a4;color:#fff;font-weight:800;cursor:pointer;min-height:46px}
+  .startBtn:hover{filter:brightness(1.1)}
+
+
+  /* Winner overlay */
+  .winner{position:fixed;inset:0;background:#000c;backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;z-index:9998}
+  .winnerBox{background:#0f1628;border:1px solid #ffffff22;border-radius:16px;padding:clamp(18px,3vw,26px);display:grid;gap:12px;place-items:center;min-width:min(86vw,360px);box-shadow:0 10px 30px #0007}
+  .winnerTitle{font-size:clamp(20px,4vw,32px);font-weight:900}
+  .winnerBtns{display:flex;gap:10px}
+  .winnerBtns button{padding:12px 14px;border-radius:12px;border:1px solid #ffffff22;background:#17224b;color:#fff;cursor:pointer;min-height:46px}
+
+
+  /* VIP selection HUD */
+  .vipHud{
+    position:fixed; inset:auto 16px 16px 16px; z-index:9997;
+    background:linear-gradient(180deg,#0b102b,#0e1438); border:1px solid #ffffff22; border-radius:16px;
+    padding:14px; display:grid; gap:10px; max-width:520px; box-shadow:0 10px 30px #0008;
+  }
+  .vipHud h4{margin:0; font-size:16px}
+  .vipHud p{margin:0; color:#a9b7ff; font-size:13px}
+  .vipRow{display:flex; gap:10px; flex-wrap:wrap}
+  .vipRow button{min-width:44px}
+  .vipConfirm[disabled]{opacity:.6; cursor:not-allowed}
+
+
+  #vipHudContainer .vipHud {
+  position: static !important;
+  inset: auto !important;
+  max-width: 100% !important;
+  max-height: none !important;
+  box-shadow: none !important;
+  background: none !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  margin-top: 14px;
+  color: var(--text);
+}
+
+</style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1>🎬 DRISHYAMM</h1>
+      <div class="muted" id="turnInfo">—</div>
+    </div>
+  </header>
+
+
+  <!-- Intro -->
+  <div id="intro" class="intro">
+    <div class="bars"><div class="bar top"></div><div class="bar bottom"></div></div>
+    <div class="grain"></div>
+    <div class="introBox">
+      <div class="flare"></div>
+      <div class="logo">DRISHYAMM</div>
+      <div class="logoSub">Guess the Main Character</div>
+      <form class="introForm" id="setup" autocomplete="off">
+        <div class="rowf">
+          <label for="p1">Player 1 name</label>
+          <input id="p1" placeholder="Player 1" />
+        </div>
+        <div class="rowf">
+          <label for="p2">Player 2 name</label>
+          <input id="p2" placeholder="Player 2" />
+        </div>
+        <div class="rowf">
+          <label>Who plays White?</label>
+          <select id="white">
+            <option value="p1">Player 1</option>
+            <option value="p2">Player 2</option>
+          </select>
+        </div>
+        <button class="startBtn" type="submit">Continue</button>
+      </form>
+      <button id="showRulesBtn" style="margin-top:12px; padding:10px 16px; border-radius:8px; background:#24318a; color:white; border:none; cursor:pointer;">Rules</button>
+
+    </div>
+  </div>
+
+
+  <!-- Winner overlay -->
+  <div id="winner" class="winner">
+    <div class="winnerBox">
+      <div class="winnerTitle" id="winnerText">Winner</div>
+      <div class="winnerBtns">
+        <button id="restartBtn">Restart</button>
+        <button id="newBtn">New Game Setup</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Rules modal -->
+  <div id="rulesModal" style="display:none; position:fixed; inset:0; background:#000a; backdrop-filter:blur(5px); 
+  justify-content:center; align-items:center; z-index:10000;">
+  <div style="background:#0f1628; padding:24px; border-radius:16px; max-width:480px; max-height:80vh; overflow-y:auto; color:#eaf0ff; box-shadow:0 0 15px #3a47a1;">
+    <h2 style="margin-top:0;">Game Rules</h2>
+    <p>
+      Welcome to DRISHYAMM! The objective is to capture the hidden VIP piece of the opponent. <br><br>
+      1. Players take turns to move pieces according to normal chess rules. <br>
+      2. Select a VIP piece for each color secretly before the game starts. <br>
+      3. Capture the opponent's VIP piece to win the game. <br>
+      4. Standard chess piece movements apply except special rules for VIP capture. <br><br>
+      Good luck and enjoy your game!
+    </p>
+    <button id="closeRulesBtn" style="margin-top:12px; padding:10px 16px; background:#8b73ff; border:none; border-radius:12px; color:#fff; cursor:pointer;">Close</button>
+  </div>
+</div>
+
+
+
+  <main>
+    <section class="board-wrap">
+      <div id="board" class="board" aria-label="Chess board"></div>
+    </section>
+    <aside class="panel">
+      <h3>Controls</h3>
+      <div class="controls">
+        <button id="reset">♻️ Reset Position</button>
+        <button id="undo">↩️ Undo</button>
+        <button id="glow">✨ Glow VIP</button>
+        <button id="sfxToggle">🔊 SFX: On</button>
+      </div>
+      <div id="vipHudContainer"></div>
+
+      <div class="status" id="status">Fill names to begin.</div>
+    </aside>
+  </main>
+
+
+<script>
+(()=>{
+  'use strict';
+  try{ document.querySelectorAll('#intro').forEach((el,i)=>{ if(i>0) el.remove(); }); }catch{}
+
+
+  const WHITE='w', BLACK='b';
+  let board, turn, history, selected=null, legal=[], over=false;
+  let vipWhite=null, vipBlack=null; let SFX=true, lastMove=null;
+  let playerWhite='White', playerBlack='Black';
+  let glowToggle=false; let firstTurn=false; // no auto glow at start anymore
+  let mode='idle'; // 'selectWhite' | 'selectBlack' | 'play'
+
+
+  // Audio
+  let AC; try{ AC = new (window.AudioContext||window.webkitAudioContext)(); }catch{}
+  const pingAudio=()=>{ if(!AC) return; if(AC.state!=='running') AC.resume?.(); };
+  function fart(short=true){ if(!SFX||!AC) return; const t=AC.currentTime; const dur= short? .32 : 1.3;
+    const noise=AC.createBufferSource(); const buf=AC.createBuffer(1,AC.sampleRate*dur,AC.sampleRate); const ch=buf.getChannelData(0);
+    for(let i=0;i<ch.length;i++){ const n=Math.random()*2-1; ch[i]= (n+(Math.random()*2-1)*.25) * (1 - i/ch.length); }
+    noise.buffer=buf; const bp=AC.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=short?200:140; bp.Q.value=.9;
+    const lp=AC.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=short?1400:900; const g=AC.createGain();
+    g.gain.value=.001; g.gain.exponentialRampToValueAtTime(.32,t+.03); g.gain.exponentialRampToValueAtTime(.001,t+dur);
+    noise.connect(bp); bp.connect(lp); lp.connect(g); g.connect(AC.destination);
+    const osc=AC.createOscillator(); const og=AC.createGain(); osc.type='triangle'; osc.frequency.setValueAtTime(150,t);
+    osc.frequency.exponentialRampToValueAtTime(70,t+dur*.7); og.gain.setValueAtTime(.0001,t);
+    og.gain.exponentialRampToValueAtTime(.12,t+.05); og.gain.exponentialRampToValueAtTime(.0001,t+dur*.7);
+    osc.connect(og); og.connect(AC.destination); noise.start(t); noise.stop(t+dur*.98); osc.start(t+.02); osc.stop(t+dur*.7);
+  }
+
+
+  // Set up initial chess position
+  function setupInitialPosition(){
+    board = Array.from({length:8}, ()=> Array(8).fill(null));
+    const place=(x,y,t,c)=> board[y][x] = {t,c,moved:false, vip:false};
+    for(let x=0;x<8;x++){ place(x,1,'p',WHITE); place(x,6,'p',BLACK); }
+    const order=['r','n','b','q','k','b','n','r'];
+    order.forEach((t,x)=>place(x,0,t,WHITE));
+    order.forEach((t,x)=>place(x,7,t,BLACK));
+    lastMove=null;
+  }
+
+
+  function startSelectionFlow(){
+    document.getElementById('intro')?.remove();
+    setupInitialPosition();
+    history=[]; over=false; selected=null; legal=[]; glowToggle=false; firstTurn=false; turn=WHITE;
+    vipWhite=null; vipBlack=null;
+    render();
+    buildVipHud(WHITE);
+    mode='selectWhite';
+    setStatus(`Choose ${playerWhite}'s VIP (White). Hidden after confirm.`);
+  }
+
+
+  function startGameAfterSelection(){
+    mode='play';
+    history=[]; over=false; selected=null; legal=[]; turn=WHITE; lastMove=null;
+    // keep VIPs secret at start; only manual ✨ Glow VIP will show them
+    glowToggle=false; firstTurn=false;
+    render(); updateStatus();
+  }
+
+
+  // Helpers
+  const inside=(x,y)=> x>=0&&x<8&&y>=0&&y<8;
+  const cloneBoard=()=> board.map(row=> row.map(p=> p? {...p}:null));
+  const coordToIndex=(x,y)=> (7-y)*8 + x;
+  const indexToCoord=(i)=> ({ x:i%8, y:7-Math.floor(i/8) });
+  const boardEl=document.getElementById('board');
+
+
+ function pieceSVG(t, c) {
+  const pieceMap = { k: 'k', q: 'q', r: 'r', b: 'b', n: 'n', p: 'p' };
+  const colorCode = c === 'w' ? 'lt' : 'dt';
+  const filename = `Chess_${pieceMap[t]}${colorCode}60.png`;
+  const url = 'assets/pieces2/' + filename;
+
+  return `<img src="${url}" alt="${t}" style="width:90%;height:90%;user-select:none;pointer-events:none;" draggable="false" />`;
+}
+
+
+  function render(){
+    boardEl.innerHTML='';
+    for(let y=7;y>=0;y--){
+      for(let x=0;x<8;x++){
+        const sq=document.createElement('div');
+        const isDark=((x+y)%2===0);
+        sq.className='sq '+(isDark?'dark':'light');
+        const p=board[y][x];
+        if(lastMove && ((lastMove.from.x===x&&lastMove.from.y===y)||(lastMove.to.x===x&&lastMove.to.y===y))) sq.classList.add('last');
+        if(x===0){ const r=document.createElement('div'); r.className='coord rank'; r.textContent=y+1; sq.appendChild(r);} 
+        if(y===0){ const f=document.createElement('div'); f.className='coord file'; f.textContent=String.fromCharCode(97+x).toUpperCase(); sq.appendChild(f);} 
+        if(p){
+          const tok=document.createElement('div'); tok.className='piece '+(p.c===WHITE?'w':'b'); tok.innerHTML=pieceSVG(p.t, p.c); sq.appendChild(tok);
+          // Only show halos during selection for the CURRENT chooser.
+          // In play mode, halos are hidden unless user taps ✨ Glow VIP, and show only current turn's VIP
+          let haloVisible=false;
+          if(p.vip){
+            if(mode==='selectWhite') haloVisible = (p.c===WHITE);
+            else if(mode==='selectBlack') haloVisible = (p.c===BLACK);
+            else if(mode==='play') haloVisible = glowToggle && (turn === p.c);
+          }
+          if(haloVisible){
+            const halo=document.createElement('div'); halo.className='vipHalo'; sq.appendChild(halo);
+          }
+        }
+        boardEl.appendChild(sq);
+      }
+    }
+  }
+
+
+  // Move gen (play mode)
+  function slide(x,y,dirs,out,color){
+    for(const [dx,dy] of dirs){
+      let tx=x+dx, ty=y+dy;
+      while(inside(tx,ty)){
+        const t=board[ty][tx];
+        if(!t){ out.push({x,y,tx,ty}); }
+        else { if(t.c!==color) out.push({x,y,tx,ty,cap:t}); break; }
+        tx+=dx; ty+=dy;
+      }
+    }
+  }
+  function genMovesAt(x,y){
+    const p=board[y][x]; if(!p||p.c!==turn) return [];
+    const moves=[]; const dir= p.c===WHITE? 1: -1;
+    const add=(tx,ty,capture=false)=>{ if(!inside(tx,ty)) return; const t=board[ty][tx];
+      if(capture){ if(t&&t.c!==p.c) moves.push({x,y,tx,ty,cap:t}); }
+      else { if(!t) moves.push({x,y,tx,ty}); } };
+    switch(p.t){
+      case 'p':{
+        add(x,y+dir,false);
+        if((p.c===WHITE&&y===1)||(p.c===BLACK&&y===6))
+          if(!board[y+dir][x]&&!board[y+2*dir][x]) moves.push({x,y,tx:x,ty:y+2*dir});
+        add(x-1,y+dir,true); add(x+1,y+dir,true); break;}
+      case 'n':{
+        [[1,2],[2,1],[-1,2],[-2,1],[1,-2],[2,-1],[-1,-2],[-2,-1]].forEach(([dx,dy])=>{
+          const tx=x+dx,ty=y+dy; if(!inside(tx,ty)) return; const t=board[ty][tx];
+          if(!t||t.c!==p.c) moves.push({x,y,tx,ty,cap:t||null}); }); break;}
+      case 'k':{
+        for(let dx=-1;dx<=1;dx++) for(let dy=-1;dy<=1;dy++){
+          if(dx||dy){ const tx=x+dx,ty=y+dy; if(!inside(tx,ty)) continue; const t=board[ty][tx];
+            if(!t||t.c!==p.c) moves.push({x,y,tx,ty,cap:t||null}); }} break;}
+      case 'b': slide(x,y,[[1,1],[-1,1],[1,-1],[-1,-1]],moves,p.c); break;
+      case 'r': slide(x,y,[[1,0],[-1,0],[0,1],[0,-1]],moves,p.c); break;
+      case 'q': slide(x,y,[[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,1],[1,-1],[-1,-1]],moves,p.c); break;
+    }
+    return moves;
+  }
+
+
+  function highlightLegal(){
+    [...boardEl.children].forEach(s=>{ s.classList.remove('sel'); const d=s.querySelector('.dot, .cap'); if(d) d.remove(); });
+    if(!selected) return;
+    const {x,y}=selected; const selSq=boardEl.children[coordToIndex(x,y)]; if(!selSq) return; selSq.classList.add('sel');
+    for(const m of legal){
+      const i=coordToIndex(m.tx,m.ty); const cell=boardEl.children[i]; if(!cell) continue;
+      if(m.cap){ const c=document.createElement('div'); c.className='cap'; cell.appendChild(c);}
+      else { const d=document.createElement('div'); d.className='dot'; cell.appendChild(d); }
+    }
+  }
+
+
+  // Clicks
+  boardEl.addEventListener('click', (e)=>{
+    pingAudio();
+    const cell=e.target.closest('.sq'); if(!cell) return;
+    const idx=[...boardEl.children].indexOf(cell); const {x,y}=indexToCoord(idx); const p=board[y][x];
+
+
+    if(mode==='selectWhite' || mode==='selectBlack'){
+      const color = (mode==='selectWhite')? WHITE : BLACK;
+      if(p && p.c===color){
+        // clear any previous VIP for this color
+        for(let ry=0; ry<8; ry++) for(let rx=0; rx<8; rx++){ const q=board[ry][rx]; if(q&&q.c===color) q.vip=false; }
+        p.vip=true; render(); updateHudButtons(true);
+        if(color===WHITE) vipWhite={x,y}; else vipBlack={x,y};
+        fart(true);
+      }
+      return;
+    }
+
+
+    if(mode!=='play' || over) return;
+
+
+    const mv=legal.find(m=> m.tx===x && m.ty===y);
+    if(selected && mv){ selected=null; legal=[]; applyMove(mv); return; }
+    if(p && p.c===turn){ selected={x,y}; legal=genMovesAt(x,y); highlightLegal(); }
+  });
+
+
+  function applyMove(m){
+    if(over) return;
+    const piece=board[m.y][m.x];
+    history.push({board:cloneBoard(), turn, lastMove});
+    const captured=m.cap||null;
+    const capVIP = captured && captured.vip===true;
+    const mover=piece.c;
+    lastMove={from:{x:m.x,y:m.y}, to:{x:m.tx,y:m.ty}};
+    fart(true); animateMove(m,piece,!!captured);
+    setTimeout(()=>{
+      board[m.y][m.x]=null;
+      if(piece.t==='p' && (m.ty===7||m.ty===0)) board[m.ty][m.tx]={t:'q',c:piece.c,moved:true,vip:false};
+      else board[m.ty][m.tx]={...piece,moved:true};
+      if(capVIP){
+        over=true; const winner = mover===WHITE? playerWhite : playerBlack;
+        showWinner(`${winner} won!`); fart(false); render(); highlightLegal(); return;
+      }
+      turn = (turn===WHITE)? BLACK: WHITE;
+      render(); highlightLegal(); updateStatus();
+    }, 8);
+  }
+
+
+  // Fixed animateMove to prevent glitch with piece resizing during move animation
+  function animateMove(m,piece,isCapture){
+    const sIdx=coordToIndex(m.x,m.y), eIdx=coordToIndex(m.tx,m.ty);
+    const sCell=boardEl.children[sIdx], eCell=boardEl.children[eIdx]; if(!sCell||!eCell) return;
+    const ghost=document.createElement('div'); ghost.className='piece '+(piece.c===WHITE?'w':'b');
+   
+    const sRect=sCell.getBoundingClientRect();
+    ghost.style.position='absolute';
+    ghost.style.width = sRect.width + 'px';
+    ghost.style.height = sRect.height + 'px';
+    ghost.style.left = sRect.left - boardEl.getBoundingClientRect().left + 'px';
+    ghost.style.top = sRect.top - boardEl.getBoundingClientRect().top + 'px';
+    ghost.style.willChange = 'transform';
+    ghost.style.transition = 'transform .18s cubic-bezier(.2,.9,.2,1.1)';
+    ghost.innerHTML=pieceSVG(piece.t);
+ 
+    boardEl.appendChild(ghost);
+ 
+    // Force reflow to apply initial position before transition
+    void ghost.offsetWidth;
+ 
+    const eRect=eCell.getBoundingClientRect();
+    const bRect=boardEl.getBoundingClientRect();
+    const dx = eRect.left - bRect.left - (sRect.left - bRect.left);
+    const dy = eRect.top - bRect.top - (sRect.top - bRect.top);
+ 
+    ghost.style.transform = `translate(${dx}px, ${dy}px)`;
+ 
+    if(isCapture){
+      const fx=document.createElement('div'); fx.className='captureFx'; fx.style.position='absolute'; fx.style.borderRadius='50%';
+      fx.style.border='3px solid #ff6b6b55'; 
+      fx.style.left=(eRect.left-bRect.left + eRect.width*0.46)+'px'; 
+      fx.style.top=(eRect.top-bRect.top + eRect.height*0.46)+'px';
+      fx.style.width=(eRect.width*0.7)+'px'; 
+      fx.style.height=(eRect.height*0.7)+'px';
+      fx.style.transform='translate(-50%,-50%)'; 
+      fx.style.animation='boom .28s ease forwards'; 
+      boardEl.appendChild(fx);
+      setTimeout(()=>fx.remove(),300);
+    }
+    setTimeout(()=>ghost.remove(),220);
+  }
+
+
+  // HUD for VIP selection
+  function buildVipHud(color){
+  destroyVipHud(); // clear any existing HUD
+
+  const hudContainer = document.getElementById('vipHudContainer');
+  if(!hudContainer) return; // safety check
+
+  const name = (color===WHITE)? playerWhite : playerBlack;
+
+  const hud = document.createElement('div');
+  hud.className = 'vipHud';
+  hud.id = 'vipHud';
+  hud.innerHTML = `
+    <h4>Choose ${name}'s VIP (${color===WHITE?'White':'Black'})</h4>
+    <p>Tap a ${color===WHITE?'white':'black'} piece (except the king), or pick randomly.</p>
+    <div class="vipRow">
+      <button id="vipRandom">🎲 Random VIP</button>
+      <button id="vipConfirm" class="vipConfirm" disabled>✅ Confirm</button>
+    </div>
+  `;
+
+  hudContainer.appendChild(hud);
+
+  document.getElementById('vipRandom').onclick = () => { pickRandomVip(color); updateHudButtons(true); fart(true); };
+  document.getElementById('vipConfirm').onclick = () => {
+    if(!hasVip(color)) return;
+    if(color === WHITE) {
+      vipWhite = findVip(color);
+      mode = 'selectBlack';
+      render();
+      buildVipHud(BLACK);
+      setStatus(`Choose ${playerBlack}'s VIP (Black). Hidden after confirm.`);
+    } else {
+      vipBlack = findVip(color);
+      destroyVipHud();
+      startGameAfterSelection();
+    }
+  };
+}
+
+  function updateHudButtons(enable){ const b=document.getElementById('vipConfirm'); if(b) b.disabled=!enable; }
+  function destroyVipHud(){
+  const hudContainer = document.getElementById('vipHudContainer');
+  if(!hudContainer) return;
+  hudContainer.innerHTML = ''; // clear container content
+}
+
+
+
+  function hasVip(color){
+    for(let y=0;y<8;y++) for(let x=0;x<8;x++){ const p=board[y][x]; if(p&&p.c===color&&p.vip) return true; }
+    return false;
+  }
+  function findVip(color){
+    for(let y=0;y<8;y++) for(let x=0;x<8;x++){ const p=board[y][x]; if(p&&p.c===color&&p.vip) return {x,y}; }
+    return null;
+  }
+  function pickRandomVip(color){
+    for(let y=0;y<8;y++) for(let x=0;x<8;x++){ const p=board[y][x]; if(p&&p.c===color) p.vip=false; }
+    const pool=[];
+    for(let y=0;y<8;y++) for(let x=0;x<8;x++){
+      const p=board[y][x]; if(p&&p.c===color&&p.t!=='k') pool.push({x,y});
+    }
+    const c = pool[Math.floor(Math.random()*pool.length)];
+    if(c){ board[c.y][c.x].vip=true; render(); if(color===WHITE) vipWhite=c; else vipBlack=c; }
+  }
+
+
+  // UI buttons
+  const btn=(id)=>document.getElementById(id);
+  btn('reset').onclick = ()=>{ startSelectionFlow(); };
+  btn('undo').onclick = ()=>{ if(mode!=='play') return; const last=history?.pop?.(); if(!last) return;
+    board=last.board; turn=last.turn; lastMove=last.lastMove||null; selected=null; legal=[]; render(); updateStatus(); };
+  btn('glow').onclick = ()=>{ glowToggle=!glowToggle; render(); };
+  btn('sfxToggle').onclick = ()=>{ SFX=!SFX; btn('sfxToggle').textContent=`🔊 SFX: ${SFX?'On':'Off'}`; pingAudio(); };
+
+
+  // Intro form
+  const form=document.getElementById('setup');
+  if(form){
+    form.addEventListener('submit',(e)=>{
+      e.preventDefault();
+      const p1=(document.getElementById('p1').value||'Player 1').trim();
+      const p2=(document.getElementById('p2').value||'Player 2').trim();
+      const whiteSel=document.getElementById('white').value;
+      playerWhite=(whiteSel==='p1')?p1:p2; playerBlack=(whiteSel==='p1')?p2:p1;
+      startSelectionFlow();
+    });
+  }
+
+
+  // Winner overlay
+  const winEl=document.getElementById('winner');
+  function showWinner(text){ document.getElementById('winnerText').textContent=text; winEl.style.display='flex'; }
+  btn('restartBtn').onclick=()=>{ winEl.style.display='none'; startSelectionFlow(); };
+  btn('newBtn').onclick=()=>{ winEl.style.display='none';
+    if(!document.getElementById('intro')){
+      const i=document.createElement('div'); i.id='intro'; i.className='intro';
+      i.innerHTML=`<div class="bars"><div class="bar top"></div><div class="bar bottom"></div></div><div class="grain"></div>
+      <div class="introBox"><div class="flare"></div><div class="logo">DRISHYAMM</div><div class="logoSub">Guess the Main Character</div>
+      <form class="introForm" id="setup" autocomplete="off">
+        <div class="rowf"><label for="p1">Player 1 name</label><input id="p1" placeholder="Player 1" /></div>
+        <div class="rowf"><label for="p2">Player 2 name</label><input id="p2" placeholder="Player 2" /></div>
+        <div class="rowf"><label>Who plays White?</label><select id="white"><option value="p1">Player 1</option><option value="p2">Player 2</option></select></div>
+        <button class="startBtn" type="submit">Continue</button>
+      </form></div>`;
+      document.body.appendChild(i);
+      document.getElementById('setup').addEventListener('submit',(e)=>{
+        e.preventDefault();
+        const p1=(document.getElementById('p1').value||'Player 1').trim();
+        const p2=(document.getElementById('p2').value||'Player 2').trim();
+        const whiteSel=document.getElementById('white').value;
+        playerWhite=(whiteSel==='p1')?p1:p2; playerBlack=(whiteSel==='p1')?p2:p1;
+        startSelectionFlow();
+      });
+    }
+  };
+
+
+  function setStatus(s){ document.getElementById('status').textContent=s; document.getElementById('turnInfo').textContent=s; }
+  function updateStatus(){ setStatus(`${turn===WHITE? playerWhite: playerBlack} (${turn===WHITE?'White':'Black'}) to move — capture the hidden VIP to win`); }
+const showRulesBtn = document.getElementById('showRulesBtn');
+const rulesModal = document.getElementById('rulesModal');
+const closeRulesBtn = document.getElementById('closeRulesBtn');
+
+showRulesBtn.onclick = () => {
+  rulesModal.style.display = 'flex';
+};
+
+closeRulesBtn.onclick = () => {
+  rulesModal.style.display = 'none';
+};
+
+rulesModal.onclick = (e) => {
+  if (e.target === rulesModal) rulesModal.style.display = 'none';
+};
+
+
+})();
+</script>
+</body>
+</html>
